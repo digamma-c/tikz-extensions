@@ -1,0 +1,210 @@
+\catcode`\@=11
+\def\tikz@handle{%  
+    \pgfutil@switch\pgfutil@ifx\pgf@let@token{%
+        {(}{\let\pgfutil@next\tikz@movetoabs}%
+        {+}{\let\pgfutil@next\tikz@movetorel}%
+        {-}{\let\pgfutil@next\tikz@lineto}%
+        {.}{\let\pgfutil@next\tikz@dot}%
+        {r}{\let\pgfutil@next\tikz@rect}%
+        {n}{\let\pgfutil@next\tikz@fig}%
+        {[}{\let\pgfutil@next\tikz@parse@options}%
+        {c}{\let\pgfutil@next\tikz@cchar}%
+        {\bgroup}{\let\pgfutil@next\tikz@beginscope}%
+        {\egroup}{\let\pgfutil@next\tikz@endscope}%
+        {;}{\let\pgfutil@next\tikz@finish}%
+        {a}{\let\pgfutil@next\tikz@a@char}%
+        {e}{\let\pgfutil@next\tikz@e@char}%
+        {g}{\let\pgfutil@next\tikz@g@char}%
+        {s}{\let\pgfutil@next\tikz@schar}%
+        {|}{\let\pgfutil@next\tikz@vh@lineto}%
+        {p}{\pgfsetmovetofirstplotpoint\let\pgfutil@next\tikz@pchar}%
+        {t}{\let\pgfutil@next\tikz@to}%
+        {\pgfextra}{\let\pgfutil@next\tikz@extra}%
+        {\foreach}{\let\pgfutil@next\tikz@foreach}%
+        {f}{\let\pgfutil@next\tikz@fchar}%
+        {\pgf@stop}{\let\pgfutil@next\relax}%
+        {\par}{\let\pgfutil@next\tikz@scan@next@command}%
+        {d}{\let\pgfutil@next\tikz@decoration}%
+        {l}{\let\pgfutil@next\tikz@l@char}%
+        {:}{\let\pgfutil@next\tikz@colon@char}%
+        {\relax}{\relax\let\pgfutil@next\tikz@scan@next@command}%
+        {m}{\let\pgfutil@next\tikz@mchar}%
+        {o}{\let\pgfutil@next\tikz@ochar}%
+    }{\tikz@resetexpandcount\pgfutil@next}{\tikz@expand}%
+}
+
+\def\tikz@mchar{%
+    \pgfutil@ifnextchar i{\tikz@midpoint}{\tikz@expand}%
+}
+
+\def\tikz@midpoint idpoint{%
+    \tikz@flush@moveto%
+    \tikz@@midpoint%
+}
+
+\def\tikz@@midpoint{%
+    \pgfutil@ifnextchar({\tikz@do@midpoint}{\tikzerror{Expected parenthesis after midpoint}}%
+}
+
+\def\tikz@do@midpoint(#1){%
+    \edef\tikz@midpoint@name{\tikz@pp@name{#1}}%
+    \pgfgetpath\tikz@currentpath%
+    \pgfprocesspathextractpoints\tikz@currentpath%
+    \pgf@process{\pgfpointsecondlastonpath}%
+    \pgf@xa=\pgf@x%
+    \pgf@ya=\pgf@y%
+    \pgf@process{\pgfpointlastonpath}%
+    \pgf@x=\dimexpr .5\pgf@x + .5\pgf@xa\relax
+    \pgf@y=\dimexpr .5\pgf@y + .5\pgf@ya\relax
+    \expandafter\pgfcoordinate\expandafter{\tikz@midpoint@name}{\pgfqpoint{\pgf@x}{\pgf@y}}%
+    \tikz@scan@next@command%
+}
+
+\def\tikz@ochar{%  
+    \pgfutil@ifnextchar p{\tikz@oproj}{\tikz@expand}%  
+}
+
+\def\tikz@oproj proj{%  
+    \tikz@flush@moveto
+    \tikz@@oproj%
+}  
+  
+\def\tikz@@oproj{%  
+    \pgfutil@ifnextchar\bgroup{\tikz@@oproj@line}{\tikzerror{Expected \string\bgroup after oproj}}%  
+}  
+\def\tikz@@oproj@line#1{%  
+    \edef\tikz@oproj@line{#1}%  
+    \pgfutil@ifnextchar({\tikz@@oproj@coord}{\tikzerror{Expected parenthesis for coordinate}}%  
+}  
+\def\tikz@@oproj@coord(#1){%  
+    \edef\tikz@oproj@target{#1}%  
+    \tikz@do@oproj%  
+}  
+  
+\def\tikz@oproj@split@line#1--#2\@nil{%  
+    \edef\tikz@oproj@A{\expandafter\strip@parentheses\expandafter{#1}}%  
+    \edef\tikz@oproj@B{\expandafter\strip@parentheses\expandafter{#2}}%  
+}  
+  
+\def\strip@parentheses#1{%  
+    \expandafter\strip@parentheses@aux#1\@nil%  
+}  
+\def\strip@parentheses@aux(#1)#2\@nil{#1}
+
+\def\tikz@do@oproj{%  
+    \pgfgetlastxy{\currentx}{\currenty}%  
+    \expandafter\tikz@oproj@split@line\tikz@oproj@line--\@nil%  
+    \pgfextract@process\tikz@oproj@A{\tikz@scan@one@point\pgfutil@firstofone(\tikz@oproj@A)}%  
+    \pgfextract@process\tikz@oproj@B{\tikz@scan@one@point\pgfutil@firstofone(\tikz@oproj@B)}%  
+    \pgf@process{\tikz@oproj@A}%  
+    \pgf@xa=\pgf@x \pgf@ya=\pgf@y%  
+    \pgf@process{\tikz@oproj@B}%  
+    \pgf@xb=\pgf@x \pgf@yb=\pgf@y%  
+    \advance\pgf@xb by -\pgf@xa \advance\pgf@yb by -\pgf@ya%
+    \pgf@xc=\currentx \advance\pgf@xc by -\pgf@xa%  
+    \pgf@yc=\currenty \advance\pgf@yc by -\pgf@ya%  
+    \c@pgf@counta=1%  
+    \loop%  
+        \ifdim\pgf@xb>1pt 
+            \divide\pgf@xb by2 \divide\pgf@yb by2 
+            \divide\pgf@xc by2 \divide\pgf@yc by2 
+            \multiply\c@pgf@counta by2%
+    \repeat%  
+    \loop%  
+        \ifdim\pgf@xb<-8192pt 
+            \divide\pgf@xb by2 \divide\pgf@yb by2 
+            \divide\pgf@xc by2 \divide\pgf@yc by2 
+            \multiply\c@pgf@counta by2%
+    \repeat%  
+    \pgfmathparse{(\pgf@sys@tonumber{\pgf@xc})*(\pgf@sys@tonumber{\pgf@xb}) + (\pgf@sys@tonumber{\pgf@yc})*(\pgf@sys@tonumber{\pgf@yb})}%  
+    \let\dotprod=\pgfmathresult%  
+    \pgfmathparse{(\pgf@sys@tonumber{\pgf@xb})^2 + (\pgf@sys@tonumber{\pgf@yb})^2}%  
+    \let\lensq=\pgfmathresult%  
+    \ifdim\lensq pt=0pt%  
+        \tikzerror{Line segment has zero length}%  
+    \else%  
+        \pgfmathparse{\dotprod/\lensq}%  
+        \pgf@x=\pgf@xa%  
+        \pgf@y=\pgf@ya%  
+        \advance\pgf@x by \dimexpr\pgfmathresult\pgf@xb*\c@pgf@counta\relax%  
+        \advance\pgf@y by \dimexpr\pgfmathresult\pgf@yb*\c@pgf@counta\relax%  
+        \expandafter\pgfcoordinate\expandafter{\tikz@oproj@target}{\pgfqpoint{\pgf@x}{\pgf@y}}%
+    \fi%
+    \tikz@scan@next@command%
+}
+
+\newif\iftikz@square@invert
+\tikzset{
+    invert/.is if=tikz@square@invert,
+    invert/.default=true,
+}
+    
+\def\tikz@pchar{%
+    \pgfutil@ifnextchar o
+        {\tikz@polygon}%
+        {\pgfutil@ifnextchar l{\tikz@plot}{\pgfutil@ifnextchar
+i{\tikz@subpicture}{\tikz@parabola}}
+}%
+}
+    
+\def\tikz@polygon olygon{%
+    \tikz@flush@moveto
+    \pgfutil@ifnextchar\bgroup
+        {\tikz@do@polygon}%
+        {\tikzerror{Expected \string\bgroup after polygon}}%
+}
+    
+\def\tikz@do@polygon#1{%
+    \pgfpathmoveto{\pgfqpoint{\tikz@lastx}{\tikz@lasty}}%
+    \foreach \pt in {#1} {%
+        \tikz@scan@one@point\pgfutil@firstofone\pt
+        \pgfpathlineto{\pgfqpoint{\pgf@x}{\pgf@y}}%
+    }%
+    \pgfpathclose
+    \tikz@lastx=\pgf@x  \tikz@lasty=\pgf@y
+    \tikz@scan@next@command
+}
+
+\def\tikz@schar{%
+    \pgfutil@ifnextchar q
+        {\tikz@square}
+        {\pgfutil@ifnextchar i
+            {\tikz@sine}
+            {\tikz@svg@path}}%
+}
+
+\def\tikz@square quare{%
+    \tikz@flush@moveto%
+    \pgfutil@ifnextchar({\tikz@do@square}{\tikzerror{Expected parenthesis after square}}%
+}
+
+\def\tikz@do@square(#1){%
+    \pgfmathsetlength{\pgf@xa}{#1}%
+    \pgf@xb=\tikz@lastx
+    \pgf@yb=\tikz@lasty
+    \iftikz@square@invert
+        \advance\pgf@yb by -\pgf@xa%
+    \else
+        \advance\pgf@yb by \pgf@xa%
+    \fi
+    \advance\pgf@xb by \pgf@xa%
+    \pgfpathrectanglecorners{\pgfqpoint{\tikz@lastx}{\tikz@lasty}}{\pgfqpoint{\pgf@xb}{\pgf@yb}}
+    \tikz@lastx=\pgf@xb
+    \tikz@lasty=\pgf@yb
+    \tikz@scan@next@command
+}
+
+\def\tikz@do@circle#1{%
+    \pgfutil@ifundefined{pgf@sh@ns@#1}{%
+        \pgfmathparse{#1}%
+        \let\tikz@ellipse@x=\pgfmathresult
+    }{%
+        \pgfpointdiff{\pgfpointorigin}{\pgfpointanchor{#1}{center}}%
+        \pgfmathveclen{\pgf@x}{\pgf@y}%
+        \let\tikz@ellipse@x=\pgfmathresult
+    }%
+    \pgfpathellipse{\pgfpointorigin}%
+        {\pgfqpoint{\tikz@ellipse@x pt}{0pt}}%
+        {\pgfpoint{0pt}{\tikz@ellipse@x pt}}%
+}
+\catcode`\@=12
